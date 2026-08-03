@@ -1,0 +1,28 @@
+name: Soroban CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Build Contract
+      working-directory: ./contracts/stormsale
+      run: cargo build --target wasm32-unknown-unknown --release
+
+    - name: Run Linter (Clippy)
+      working-directory: ./contracts/stormsale
+      run: cargo clippy --all-targets --all-features -- -D warnings

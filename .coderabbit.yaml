@@ -1,0 +1,19 @@
+language: "en-US"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_instructions:
+    - path: "**/*.rs"
+      instructions: |
+        - This is a Soroban smart contract written in Rust.
+        - Ensure all logic aligns with the Campaign Budget Escrow model.
+        - Check for missing `#![no_std]` in non-root files (it should ONLY be in lib.rs).
+        - Enforce atomic, single-responsibility functions.
+        - Look for proper error handling using the defined custom errors.
+chat:
+  auto_reply: true
