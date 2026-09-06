@@ -1,13 +1,16 @@
 #![no_std]
 
+mod admin;
+mod affiliate;
+mod campaign;
 mod errors;
 mod storage;
-mod admin;
-mod campaign;
-mod affiliate;
 
-use soroban_sdk::{contract, contractimpl, Address, Env};
+#[cfg(test)]
+mod test;
+
 use errors::Error;
+use soroban_sdk::{contract, contractimpl, Address, Env};
 use storage::{Campaign, RoleType, Sale};
 
 #[contract]
@@ -21,44 +24,54 @@ impl StormSaleContract {
     }
 
     /// Grant a role to an address (Admin only)
-    pub fn grant_role(env: Env, admin: Address, target: Address, role: RoleType) -> Result<(), Error> {
+    pub fn grant_role(
+        env: Env,
+        admin: Address,
+        target: Address,
+        role: RoleType,
+    ) -> Result<(), Error> {
         admin::grant_role(env, admin, target, role)
     }
 
     /// Create a new affiliate campaign (Advertiser only)
     pub fn create_campaign(
-        env: Env, 
-        advertiser: Address, 
-        commission_rate: u32, 
+        env: Env,
+        advertiser: Address,
+        commission_rate: u32,
         clearing_period: u32,
-        budget: i128
+        budget: i128,
     ) -> Result<u32, Error> {
         campaign::create_campaign(env, advertiser, commission_rate, clearing_period, budget)
     }
-    
+
     /// Top up the budget of an existing campaign (Advertiser only)
     pub fn top_up_budget(
-        env: Env, 
-        advertiser: Address, 
+        env: Env,
+        advertiser: Address,
         campaign_id: u32,
-        amount: i128
+        amount: i128,
     ) -> Result<(), Error> {
         campaign::top_up_budget(env, advertiser, campaign_id, amount)
     }
 
     /// Log a sale (Advertiser only)
     pub fn log_sale(
-        env: Env, 
-        advertiser: Address, 
-        campaign_id: u32, 
-        affiliate: Address, 
-        amount: i128
+        env: Env,
+        advertiser: Address,
+        campaign_id: u32,
+        affiliate: Address,
+        amount: i128,
     ) -> Result<(), Error> {
         affiliate::log_sale(env, advertiser, campaign_id, affiliate, amount)
     }
 
     /// Auditor approves a sale
-    pub fn audit_sale(env: Env, auditor: Address, campaign_id: u32, affiliate: Address) -> Result<(), Error> {
+    pub fn audit_sale(
+        env: Env,
+        auditor: Address,
+        campaign_id: u32,
+        affiliate: Address,
+    ) -> Result<(), Error> {
         affiliate::audit_sale(env, auditor, campaign_id, affiliate)
     }
 

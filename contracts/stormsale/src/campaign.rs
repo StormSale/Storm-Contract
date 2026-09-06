@@ -1,17 +1,15 @@
-
-
-use soroban_sdk::{token, Address, Env};
-use crate::storage::{get_token_address, DataKey, RoleType, Campaign, set_campaign};
-use crate::errors::Error;
 use crate::admin::check_role;
+use crate::errors::Error;
+use crate::storage::{get_token_address, set_campaign, Campaign, DataKey, RoleType};
+use soroban_sdk::{token, Address, Env};
 
 /// Create a new affiliate campaign (Advertiser only)
 pub fn create_campaign(
-    env: Env, 
-    advertiser: Address, 
-    commission_rate: u32, 
+    env: Env,
+    advertiser: Address,
+    commission_rate: u32,
     clearing_period: u32,
-    budget: i128
+    budget: i128,
 ) -> Result<u32, Error> {
     advertiser.require_auth();
     check_role(&env, &advertiser, RoleType::Advertiser)?;
@@ -26,7 +24,11 @@ pub fn create_campaign(
     // Transfer the budget from the advertiser to the smart contract escrow
     client.transfer(&advertiser, &env.current_contract_address(), &budget);
 
-    let mut count: u32 = env.storage().instance().get(&DataKey::CampaignCount).unwrap_or(0);
+    let mut count: u32 = env
+        .storage()
+        .instance()
+        .get(&DataKey::CampaignCount)
+        .unwrap_or(0);
     count += 1;
 
     let campaign = Campaign {
@@ -39,7 +41,9 @@ pub fn create_campaign(
     };
 
     set_campaign(&env, count, &campaign);
-    env.storage().instance().set(&DataKey::CampaignCount, &count);
+    env.storage()
+        .instance()
+        .set(&DataKey::CampaignCount, &count);
 
     Ok(count)
 }
@@ -49,11 +53,14 @@ pub fn top_up_budget(
     env: Env,
     advertiser: Address,
     campaign_id: u32,
-    amount: i128
+    amount: i128,
 ) -> Result<(), Error> {
     advertiser.require_auth();
-    
-    let mut campaign: Campaign = env.storage().persistent().get(&DataKey::Campaign(campaign_id))
+
+    let mut campaign: Campaign = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Campaign(campaign_id))
         .ok_or(Error::CampaignNotFound)?;
 
     if campaign.advertiser != advertiser {

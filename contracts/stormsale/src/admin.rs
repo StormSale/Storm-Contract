@@ -1,8 +1,6 @@
-
-
-use soroban_sdk::{Address, Env};
-use crate::storage::{DataKey, RoleType};
 use crate::errors::Error;
+use crate::storage::{DataKey, RoleType};
+use soroban_sdk::{Address, Env};
 
 /// Internal function to set a role
 pub fn grant_role_internal(env: &Env, target: Address, role: RoleType) {
@@ -11,9 +9,12 @@ pub fn grant_role_internal(env: &Env, target: Address, role: RoleType) {
 
 /// Internal function to verify a role
 pub fn check_role(env: &Env, account: &Address, required_role: RoleType) -> Result<(), Error> {
-    let role = env.storage().instance().get(&DataKey::Role(account.clone()))
+    let role = env
+        .storage()
+        .instance()
+        .get(&DataKey::Role(account.clone()))
         .unwrap_or(RoleType::Affiliate); // Default if none
-        
+
     if role != required_role && role != RoleType::Admin {
         return Err(Error::Unauthorized);
     }
@@ -24,7 +25,7 @@ pub fn init(env: Env, admin: Address, token: Address) -> Result<(), Error> {
     if env.storage().instance().has(&DataKey::Admin) {
         return Err(Error::AlreadyInitialized);
     }
-    
+
     // The admin authorizes the initialization
     admin.require_auth();
 
@@ -34,7 +35,7 @@ pub fn init(env: Env, admin: Address, token: Address) -> Result<(), Error> {
 
     // Grant Admin role to the creator
     grant_role_internal(&env, admin, RoleType::Admin);
-    
+
     Ok(())
 }
 

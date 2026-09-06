@@ -1,5 +1,3 @@
-
-
 use soroban_sdk::contracterror;
 
 #[contracterror]

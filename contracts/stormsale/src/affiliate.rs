@@ -1,15 +1,17 @@
-use soroban_sdk::{token, Address, Env};
-use crate::storage::{get_token_address, RoleType, Sale, get_campaign, set_campaign, get_sale, set_sale};
-use crate::errors::Error;
 use crate::admin::check_role;
+use crate::errors::Error;
+use crate::storage::{
+    get_campaign, get_sale, get_token_address, set_campaign, set_sale, RoleType, Sale,
+};
+use soroban_sdk::{token, Address, Env};
 
 /// Log a sale (Advertiser or Oracle only)
 pub fn log_sale(
-    env: Env, 
-    advertiser: Address, 
-    campaign_id: u32, 
-    affiliate: Address, 
-    amount: i128
+    env: Env,
+    advertiser: Address,
+    campaign_id: u32,
+    affiliate: Address,
+    amount: i128,
 ) -> Result<(), Error> {
     advertiser.require_auth();
     check_role(&env, &advertiser, RoleType::Advertiser)?;
@@ -51,14 +53,19 @@ pub fn log_sale(
 }
 
 /// Auditor approves a sale
-pub fn audit_sale(env: Env, auditor: Address, campaign_id: u32, affiliate: Address) -> Result<(), Error> {
+pub fn audit_sale(
+    env: Env,
+    auditor: Address,
+    campaign_id: u32,
+    affiliate: Address,
+) -> Result<(), Error> {
     auditor.require_auth();
     check_role(&env, &auditor, RoleType::Auditor)?;
 
     let mut sale = get_sale(&env, campaign_id, &affiliate).ok_or(Error::SaleNotFound)?;
 
     sale.approved_by_auditor = true;
-    
+
     set_sale(&env, campaign_id, &affiliate, &sale);
 
     Ok(())
@@ -67,7 +74,7 @@ pub fn audit_sale(env: Env, auditor: Address, campaign_id: u32, affiliate: Addre
 /// Affiliate claims payout
 pub fn claim_payout(env: Env, affiliate: Address, campaign_id: u32) -> Result<(), Error> {
     affiliate.require_auth();
-    
+
     let campaign = get_campaign(&env, campaign_id).ok_or(Error::CampaignNotFound)?;
     let mut sale = get_sale(&env, campaign_id, &affiliate).ok_or(Error::SaleNotFound)?;
 
@@ -92,7 +99,11 @@ pub fn claim_payout(env: Env, affiliate: Address, campaign_id: u32) -> Result<()
     set_sale(&env, campaign_id, &affiliate, &sale);
 
     // Pay the affiliate from the escrow locked in the contract
-    client.transfer(&env.current_contract_address(), &affiliate, &sale.commission);
+    client.transfer(
+        &env.current_contract_address(),
+        &affiliate,
+        &sale.commission,
+    );
 
     Ok(())
 }

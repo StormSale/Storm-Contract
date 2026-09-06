@@ -1,4 +1,3 @@
-
 use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
@@ -52,13 +51,19 @@ pub fn get_campaign(env: &Env, id: u32) -> Option<Campaign> {
 }
 
 pub fn set_campaign(env: &Env, id: u32, campaign: &Campaign) {
-    env.storage().persistent().set(&DataKey::Campaign(id), campaign);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Campaign(id), campaign);
 }
 
 pub fn get_sale(env: &Env, campaign_id: u32, affiliate: &Address) -> Option<Sale> {
-    env.storage().persistent().get(&DataKey::Sale(campaign_id, affiliate.clone()))
+    env.storage()
+        .persistent()
+        .get(&DataKey::Sale(campaign_id, affiliate.clone()))
 }
 
 pub fn set_sale(env: &Env, campaign_id: u32, affiliate: &Address, sale: &Sale) {
-    env.storage().persistent().set(&DataKey::Sale(campaign_id, affiliate.clone()), sale);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Sale(campaign_id, affiliate.clone()), sale);
 }
