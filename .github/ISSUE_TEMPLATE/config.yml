@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Stellar Community Discussions
+    url: https://discord.gg/stellar
+    about: Join Stellar Discord to discuss Soroban contract ideas and questions.
+  - name: 🛡 Security Vulnerability Report
+    url: mailto:security@stormsale.xyz
+    about: Please report sensitive security vulnerabilities privately according to SECURITY.md.
