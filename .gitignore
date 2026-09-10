@@ -1,2 +1,2 @@
 target/
-Cargo.lock
+generate_contract_commits.sh
