@@ -395,6 +395,14 @@
                     },
                     {
                       "key": {
+                        "symbol": "audience"
+                      },
+                      "val": {
+                        "u32": 0
+                      }
+                    },
+                    {
+                      "key": {
                         "symbol": "budget"
                       },
                       "val": {

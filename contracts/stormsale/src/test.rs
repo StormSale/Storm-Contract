@@ -287,3 +287,74 @@ fn test_refund_escrow_flow() {
     let fail_topup = client.try_top_up_budget(&advertiser, &campaign_id, &1_000_0000000i128);
     assert_eq!(fail_topup, Err(Ok(Error::CampaignInactive)));
 }
+
+#[test]
+fn test_targeted_campaign_b2b_and_b2c() {
+    let (env, client, admin, _t_admin, token_address, _tc, token_asset_client) = setup_test_env();
+    client.init(&admin, &token_address);
+
+    let advertiser = Address::generate(&env);
+    client.grant_role(&admin, &advertiser, &RoleType::Advertiser);
+    token_asset_client.mint(&advertiser, &10_000_0000000i128);
+
+    // Default create_campaign targets B2C
+    let b2c_id = client.create_campaign(&advertiser, &1000u32, &604800u32, &2_000_0000000i128);
+    let b2c_campaign = client.get_campaign(&b2c_id);
+    assert_eq!(b2c_campaign.audience, AudienceType::B2C);
+
+    // Explicit B2B targeted campaign
+    let b2b_id = client.create_targeted_campaign(
+        &advertiser,
+        &500u32,
+        &1209600u32,
+        &5_000_0000000i128,
+        &AudienceType::B2B,
+    );
+    let b2b_campaign = client.get_campaign(&b2b_id);
+    assert_eq!(b2b_campaign.audience, AudienceType::B2B);
+}
+
+#[test]
+fn test_b2b_campaign_operator_delegation() {
+    let (env, client, admin, _t_admin, token_address, _tc, token_asset_client) = setup_test_env();
+    client.init(&admin, &token_address);
+
+    let advertiser = Address::generate(&env);
+    let operator = Address::generate(&env);
+    let affiliate = Address::generate(&env);
+    let stranger = Address::generate(&env);
+
+    client.grant_role(&admin, &advertiser, &RoleType::Advertiser);
+    token_asset_client.mint(&advertiser, &5_000_0000000i128);
+
+    let campaign_id = client.create_targeted_campaign(
+        &advertiser,
+        &1000u32,
+        &604800u32,
+        &5_000_0000000i128,
+        &AudienceType::B2B,
+    );
+
+    // Unapproved operator cannot log sale
+    let res_fail = client.try_log_sale(&operator, &campaign_id, &affiliate, &1_000_0000000i128);
+    assert_eq!(res_fail, Err(Ok(Error::Unauthorized)));
+
+    // Advertiser approves B2B operator (e.g. backend server / marketing lead)
+    client.set_campaign_operator(&advertiser, &campaign_id, &operator, &true);
+    assert!(client.is_operator(&campaign_id, &operator));
+
+    // Operator successfully logs sale
+    let res_ok = client.try_log_sale(&operator, &campaign_id, &affiliate, &1_000_0000000i128);
+    assert!(res_ok.is_ok());
+
+    // Stranger still rejected
+    let res_stranger = client.try_log_sale(&stranger, &campaign_id, &affiliate, &1_000_0000000i128);
+    assert_eq!(res_stranger, Err(Ok(Error::Unauthorized)));
+
+    // Advertiser revokes operator
+    client.set_campaign_operator(&advertiser, &campaign_id, &operator, &false);
+    assert!(!client.is_operator(&campaign_id, &operator));
+
+    let res_revoked = client.try_log_sale(&operator, &campaign_id, &affiliate, &1_000_0000000i128);
+    assert_eq!(res_revoked, Err(Ok(Error::Unauthorized)));
+}

@@ -5,20 +5,22 @@ use crate::storage::{
 };
 use soroban_sdk::{symbol_short, token, Address, Env};
 
-/// Log a sale (Advertiser or Oracle only)
+/// Log a sale (Advertiser or authorized B2B Campaign Operator)
 pub fn log_sale(
     env: Env,
-    advertiser: Address,
+    caller: Address,
     campaign_id: u32,
     affiliate: Address,
     amount: i128,
 ) -> Result<(), Error> {
-    advertiser.require_auth();
-    check_role(&env, &advertiser, RoleType::Advertiser)?;
+    caller.require_auth();
 
     let mut campaign = get_campaign(&env, campaign_id).ok_or(Error::CampaignNotFound)?;
 
-    if campaign.advertiser != advertiser {
+    let is_authorized = campaign.advertiser == caller
+        || crate::storage::is_campaign_operator(&env, campaign_id, &caller);
+
+    if !is_authorized {
         return Err(Error::Unauthorized);
     }
 

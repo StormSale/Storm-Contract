@@ -1,15 +1,36 @@
 use crate::admin::check_role;
 use crate::errors::Error;
-use crate::storage::{get_campaign, get_token_address, set_campaign, Campaign, DataKey, RoleType};
+use crate::storage::{
+    self, get_campaign, get_token_address, set_campaign, AudienceType, Campaign, DataKey, RoleType,
+};
 use soroban_sdk::{symbol_short, token, Address, Env};
 
-/// Create a new affiliate campaign (Advertiser only)
+/// Create a new affiliate campaign (Advertiser only, default B2C)
 pub fn create_campaign(
     env: Env,
     advertiser: Address,
     commission_rate: u32,
     clearing_period: u32,
     budget: i128,
+) -> Result<u32, Error> {
+    create_targeted_campaign(
+        env,
+        advertiser,
+        commission_rate,
+        clearing_period,
+        budget,
+        AudienceType::B2C,
+    )
+}
+
+/// Create a new targeted affiliate campaign (Advertiser only, explicit B2B or B2C)
+pub fn create_targeted_campaign(
+    env: Env,
+    advertiser: Address,
+    commission_rate: u32,
+    clearing_period: u32,
+    budget: i128,
+    audience: AudienceType,
 ) -> Result<u32, Error> {
     advertiser.require_auth();
     check_role(&env, &advertiser, RoleType::Advertiser)?;
@@ -38,6 +59,7 @@ pub fn create_campaign(
         clearing_period,
         budget,
         active: true,
+        audience,
     };
 
     set_campaign(&env, count, &campaign);
@@ -45,12 +67,46 @@ pub fn create_campaign(
         .instance()
         .set(&DataKey::CampaignCount, &count);
 
+    let audience_sym = match audience {
+        AudienceType::B2C => symbol_short!("b2c"),
+        AudienceType::B2B => symbol_short!("b2b"),
+    };
+
     env.events().publish(
-        (symbol_short!("camp"), symbol_short!("created")),
+        (
+            symbol_short!("camp"),
+            symbol_short!("created"),
+            audience_sym,
+        ),
         (count, advertiser, budget),
     );
 
     Ok(count)
+}
+
+/// Authorize or revoke a B2B team operator to log sales on behalf of an advertiser
+pub fn set_campaign_operator(
+    env: Env,
+    advertiser: Address,
+    campaign_id: u32,
+    operator: Address,
+    approved: bool,
+) -> Result<(), Error> {
+    advertiser.require_auth();
+
+    let campaign = get_campaign(&env, campaign_id).ok_or(Error::CampaignNotFound)?;
+    if campaign.advertiser != advertiser {
+        return Err(Error::Unauthorized);
+    }
+
+    storage::set_campaign_operator(&env, campaign_id, &operator, approved);
+
+    env.events().publish(
+        (symbol_short!("operator"), symbol_short!("set")),
+        (campaign_id, operator, approved),
+    );
+
+    Ok(())
 }
 
 /// Allows advertiser to add more budget to an existing campaign

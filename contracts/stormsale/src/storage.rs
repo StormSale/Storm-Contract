@@ -1,6 +1,13 @@
 use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum AudienceType {
+    B2C = 0, // Consumer, Influencer & Creator Affiliate Programs
+    B2B = 1, // Enterprise, Merchant & SaaS Partner Networks
+}
+
+#[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DataKey {
     Admin,
@@ -9,6 +16,7 @@ pub enum DataKey {
     CampaignCount,
     Campaign(u32),
     Sale(u32, Address),
+    CampaignOperator(u32, Address),
 }
 
 #[contracttype]
@@ -29,6 +37,7 @@ pub struct Campaign {
     pub clearing_period: u32, // seconds until a payout can be claimed
     pub budget: i128,         // remaining escrow budget locked in the contract
     pub active: bool,
+    pub audience: AudienceType,
 }
 
 #[contracttype]
@@ -86,4 +95,21 @@ pub fn set_sale(env: &Env, campaign_id: u32, affiliate: &Address, sale: &Sale) {
     env.storage()
         .persistent()
         .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
+}
+
+pub fn is_campaign_operator(env: &Env, campaign_id: u32, operator: &Address) -> bool {
+    let key = DataKey::CampaignOperator(campaign_id, operator.clone());
+    env.storage().persistent().get(&key).unwrap_or(false)
+}
+
+pub fn set_campaign_operator(env: &Env, campaign_id: u32, operator: &Address, approved: bool) {
+    let key = DataKey::CampaignOperator(campaign_id, operator.clone());
+    if approved {
+        env.storage().persistent().set(&key, &true);
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
+    } else {
+        env.storage().persistent().remove(&key);
+    }
 }

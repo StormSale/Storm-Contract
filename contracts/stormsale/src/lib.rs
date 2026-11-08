@@ -11,7 +11,7 @@ mod test;
 
 use errors::Error;
 use soroban_sdk::{contract, contractimpl, Address, Env};
-use storage::{Campaign, RoleType, Sale};
+use storage::{AudienceType, Campaign, RoleType, Sale};
 
 #[contract]
 pub struct StormSaleContract;
@@ -33,7 +33,7 @@ impl StormSaleContract {
         admin::grant_role(env, admin, target, role)
     }
 
-    /// Create a new affiliate campaign (Advertiser only)
+    /// Create a new affiliate campaign (Advertiser only, default B2C)
     pub fn create_campaign(
         env: Env,
         advertiser: Address,
@@ -42,6 +42,41 @@ impl StormSaleContract {
         budget: i128,
     ) -> Result<u32, Error> {
         campaign::create_campaign(env, advertiser, commission_rate, clearing_period, budget)
+    }
+
+    /// Create a targeted affiliate campaign (Advertiser only, explicit B2B or B2C)
+    pub fn create_targeted_campaign(
+        env: Env,
+        advertiser: Address,
+        commission_rate: u32,
+        clearing_period: u32,
+        budget: i128,
+        audience: AudienceType,
+    ) -> Result<u32, Error> {
+        campaign::create_targeted_campaign(
+            env,
+            advertiser,
+            commission_rate,
+            clearing_period,
+            budget,
+            audience,
+        )
+    }
+
+    /// Authorize or revoke a B2B team operator to log sales on behalf of an advertiser
+    pub fn set_campaign_operator(
+        env: Env,
+        advertiser: Address,
+        campaign_id: u32,
+        operator: Address,
+        approved: bool,
+    ) -> Result<(), Error> {
+        campaign::set_campaign_operator(env, advertiser, campaign_id, operator, approved)
+    }
+
+    /// Check if an address is an authorized operator for a campaign
+    pub fn is_operator(env: Env, campaign_id: u32, operator: Address) -> bool {
+        storage::is_campaign_operator(&env, campaign_id, &operator)
     }
 
     /// Top up the budget of an existing campaign (Advertiser only)
