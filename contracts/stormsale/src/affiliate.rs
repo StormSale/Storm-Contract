@@ -3,7 +3,7 @@ use crate::errors::Error;
 use crate::storage::{
     get_campaign, get_sale, get_token_address, set_campaign, set_sale, RoleType, Sale,
 };
-use soroban_sdk::{token, Address, Env};
+use soroban_sdk::{symbol_short, token, Address, Env};
 
 /// Log a sale (Advertiser or Oracle only)
 pub fn log_sale(
@@ -20,6 +20,10 @@ pub fn log_sale(
 
     if campaign.advertiser != advertiser {
         return Err(Error::Unauthorized);
+    }
+
+    if !campaign.active {
+        return Err(Error::CampaignInactive);
     }
 
     if amount <= 0 {
@@ -49,6 +53,11 @@ pub fn log_sale(
 
     set_sale(&env, campaign_id, &affiliate, &sale);
 
+    env.events().publish(
+        (symbol_short!("sale"), symbol_short!("logged")),
+        (campaign_id, affiliate, amount, commission),
+    );
+
     Ok(())
 }
 
@@ -67,6 +76,11 @@ pub fn audit_sale(
     sale.approved_by_auditor = true;
 
     set_sale(&env, campaign_id, &affiliate, &sale);
+
+    env.events().publish(
+        (symbol_short!("sale"), symbol_short!("audited")),
+        (campaign_id, affiliate),
+    );
 
     Ok(())
 }
@@ -103,6 +117,11 @@ pub fn claim_payout(env: Env, affiliate: Address, campaign_id: u32) -> Result<()
         &env.current_contract_address(),
         &affiliate,
         &sale.commission,
+    );
+
+    env.events().publish(
+        (symbol_short!("payout"), symbol_short!("claimed")),
+        (campaign_id, affiliate, sale.commission),
     );
 
     Ok(())

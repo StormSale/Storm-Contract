@@ -1,7 +1,7 @@
 use crate::admin::check_role;
 use crate::errors::Error;
-use crate::storage::{get_token_address, set_campaign, Campaign, DataKey, RoleType};
-use soroban_sdk::{token, Address, Env};
+use crate::storage::{get_campaign, get_token_address, set_campaign, Campaign, DataKey, RoleType};
+use soroban_sdk::{symbol_short, token, Address, Env};
 
 /// Create a new affiliate campaign (Advertiser only)
 pub fn create_campaign(
@@ -45,6 +45,11 @@ pub fn create_campaign(
         .instance()
         .set(&DataKey::CampaignCount, &count);
 
+    env.events().publish(
+        (symbol_short!("camp"), symbol_short!("created")),
+        (count, advertiser, budget),
+    );
+
     Ok(count)
 }
 
@@ -57,14 +62,14 @@ pub fn top_up_budget(
 ) -> Result<(), Error> {
     advertiser.require_auth();
 
-    let mut campaign: Campaign = env
-        .storage()
-        .persistent()
-        .get(&DataKey::Campaign(campaign_id))
-        .ok_or(Error::CampaignNotFound)?;
+    let mut campaign = get_campaign(&env, campaign_id).ok_or(Error::CampaignNotFound)?;
 
     if campaign.advertiser != advertiser {
         return Err(Error::Unauthorized);
+    }
+
+    if !campaign.active {
+        return Err(Error::CampaignInactive);
     }
 
     if amount <= 0 {
@@ -80,5 +85,42 @@ pub fn top_up_budget(
     campaign.budget += amount;
     set_campaign(&env, campaign_id, &campaign);
 
+    env.events().publish(
+        (symbol_short!("camp"), symbol_short!("topup")),
+        (campaign_id, amount, campaign.budget),
+    );
+
     Ok(())
+}
+
+/// Allows advertiser to cancel/close campaign and refund remaining escrow budget
+pub fn refund_escrow(env: Env, advertiser: Address, campaign_id: u32) -> Result<i128, Error> {
+    advertiser.require_auth();
+
+    let mut campaign = get_campaign(&env, campaign_id).ok_or(Error::CampaignNotFound)?;
+
+    if campaign.advertiser != advertiser {
+        return Err(Error::Unauthorized);
+    }
+
+    let refundable = campaign.budget;
+    if refundable <= 0 {
+        return Err(Error::InvalidAmount);
+    }
+
+    let token_addr = get_token_address(&env).ok_or(Error::NotInitialized)?;
+    let client = token::Client::new(&env, &token_addr);
+
+    campaign.budget = 0;
+    campaign.active = false;
+    set_campaign(&env, campaign_id, &campaign);
+
+    client.transfer(&env.current_contract_address(), &advertiser, &refundable);
+
+    env.events().publish(
+        (symbol_short!("camp"), symbol_short!("refund")),
+        (campaign_id, advertiser, refundable),
+    );
+
+    Ok(refundable)
 }

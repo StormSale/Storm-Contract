@@ -54,6 +54,11 @@ impl StormSaleContract {
         campaign::top_up_budget(env, advertiser, campaign_id, amount)
     }
 
+    /// Refund remaining escrow budget and close campaign (Advertiser only)
+    pub fn refund_escrow(env: Env, advertiser: Address, campaign_id: u32) -> Result<i128, Error> {
+        campaign::refund_escrow(env, advertiser, campaign_id)
+    }
+
     /// Log a sale (Advertiser only)
     pub fn log_sale(
         env: Env,

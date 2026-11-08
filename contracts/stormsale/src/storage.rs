@@ -41,29 +41,49 @@ pub struct Sale {
     pub approved_by_auditor: bool,
 }
 
+pub const LEDGER_THRESHOLD: u32 = 100_000;
+pub const LEDGER_EXTEND: u32 = 200_000;
+
 // Helpers
 pub fn get_token_address(env: &Env) -> Option<Address> {
+    env.storage()
+        .instance()
+        .extend_ttl(LEDGER_THRESHOLD, LEDGER_EXTEND);
     env.storage().instance().get(&DataKey::Token)
 }
 
 pub fn get_campaign(env: &Env, id: u32) -> Option<Campaign> {
-    env.storage().persistent().get(&DataKey::Campaign(id))
+    let key = DataKey::Campaign(id);
+    if env.storage().persistent().has(&key) {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
+    }
+    env.storage().persistent().get(&key)
 }
 
 pub fn set_campaign(env: &Env, id: u32, campaign: &Campaign) {
+    let key = DataKey::Campaign(id);
+    env.storage().persistent().set(&key, campaign);
     env.storage()
         .persistent()
-        .set(&DataKey::Campaign(id), campaign);
+        .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
 }
 
 pub fn get_sale(env: &Env, campaign_id: u32, affiliate: &Address) -> Option<Sale> {
-    env.storage()
-        .persistent()
-        .get(&DataKey::Sale(campaign_id, affiliate.clone()))
+    let key = DataKey::Sale(campaign_id, affiliate.clone());
+    if env.storage().persistent().has(&key) {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
+    }
+    env.storage().persistent().get(&key)
 }
 
 pub fn set_sale(env: &Env, campaign_id: u32, affiliate: &Address, sale: &Sale) {
+    let key = DataKey::Sale(campaign_id, affiliate.clone());
+    env.storage().persistent().set(&key, sale);
     env.storage()
         .persistent()
-        .set(&DataKey::Sale(campaign_id, affiliate.clone()), sale);
+        .extend_ttl(&key, LEDGER_THRESHOLD, LEDGER_EXTEND);
 }

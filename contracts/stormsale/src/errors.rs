@@ -14,4 +14,5 @@ pub enum Error {
     ClearingPeriodNotMet = 8,
     SaleNotAudited = 9,
     InsufficientBudget = 10,
+    CampaignInactive = 11,
 }

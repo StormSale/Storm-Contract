@@ -51,12 +51,27 @@ contracts/stormsale/src/
 
 | Function | Caller Role | Parameters | Description |
 | :--- | :--- | :--- | :--- |
-| `init` | Deployer | `admin: Address, token: Address` | Initializes contract with admin and settlement token. |
-| `grant_role` | Admin | `account: Address, role: RoleType` | Authorizes an Advertiser or Affiliate address. |
-| `create_campaign` | Advertiser | `advertiser: Address, budget: i128, rate_bps: u32` | Creates a new campaign and locks the initial budget into escrow. |
-| `top_up_budget` | Advertiser | `campaign_id: u64, amount: i128` | Deposits additional funds into an existing campaign escrow. |
-| `log_sale` | Merchant/API | `campaign_id: u64, affiliate: Address, sale_id: u64, amount: i128` | Records a verified conversion and calculates affiliate reward. |
-| `claim_payout` | Affiliate | `sale_id: u64` | Transfers the earned commission from contract escrow to the affiliate. |
+| `init` | Admin | `admin: Address, token: Address` | Initializes contract with admin and SAC token address. |
+| `grant_role` | Admin | `target: Address, role: RoleType` | Grants Advertiser, Affiliate, or Auditor role to an address. |
+| `create_campaign` | Advertiser | `advertiser: Address, commission_rate: u32, clearing_period: u32, budget: i128` | Creates campaign and locks upfront budget tokens into escrow. |
+| `top_up_budget` | Advertiser | `advertiser: Address, campaign_id: u32, amount: i128` | Deposits additional budget tokens into an active campaign escrow. |
+| `refund_escrow` | Advertiser | `advertiser: Address, campaign_id: u32` | Reclaims unspent escrow budget, refunds tokens, and closes campaign. |
+| `log_sale` | Advertiser | `advertiser: Address, campaign_id: u32, affiliate: Address, amount: i128` | Records conversion, deducts commission from escrow, sets clearing timer. |
+| `audit_sale` | Auditor | `auditor: Address, campaign_id: u32, affiliate: Address` | Cryptographically approves a logged conversion for commission payout. |
+| `claim_payout` | Affiliate | `affiliate: Address, campaign_id: u32` | Releases cleared, audited commission tokens from escrow to affiliate. |
+| `get_campaign` | Any | `campaign_id: u32` | Returns campaign metadata, remaining budget, and active status. |
+| `get_sale` | Any | `campaign_id: u32, affiliate: Address` | Returns recorded sale details, commission, audit status, and claim state. |
+
+---
+
+## 🧪 Testing & Verification
+
+The test suite runs with native Soroban SDK test utilities and mocks Stellar Asset Contracts (SAC):
+
+```bash
+# Run all unit tests
+cargo test --manifest-path contracts/stormsale/Cargo.toml
+```
 
 ---
 
