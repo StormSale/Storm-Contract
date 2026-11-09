@@ -64,6 +64,16 @@ contracts/stormsale/src/
 
 ---
 
+## 🗺️ Production Roadmap & Issue Backlog
+
+The StormSale Smart Contract has an active backlog of **107 production-grade issues** on GitHub:
+
+- 📋 [**Full Production Backlog (BACKLOG.md)**](BACKLOG.md): Complete specifications, user stories, acceptance criteria, and complexity classifications for all 107 issues.
+- 🎯 [**Live GitHub Issues**](https://github.com/StormSale/Storm-Contract/issues): Track open bounty issues tagged with `Drips` and complexity tiers (`complexity: low`, `complexity: medium`, `complexity: high`).
+- 🏢 **B2B vs B2C Architecture**: Includes dedicated smart contract extensions for enterprise multi-seat operators ([#109](https://github.com/StormSale/Storm-Contract/issues/109)), micro-payout fast tracking ([#110](https://github.com/StormSale/Storm-Contract/issues/110)), on-chain corporate invoice hashes ([#111](https://github.com/StormSale/Storm-Contract/issues/111)), creator bonuses ([#112](https://github.com/StormSale/Storm-Contract/issues/112)), net-term tranches ([#113](https://github.com/StormSale/Storm-Contract/issues/113)), and social handle verification ([#114](https://github.com/StormSale/Storm-Contract/issues/114)).
+
+---
+
 ## 🧪 Testing & Verification
 
 The test suite runs with native Soroban SDK test utilities and mocks Stellar Asset Contracts (SAC):
